@@ -1,5 +1,5 @@
 """
-Script to play around with accessing the Twitter API
+Python Twitter Location Listener
 """
 
 import os, sys, json, datetime
@@ -11,7 +11,7 @@ import credentials
 # ======================================================================================================================
 def Main():
 
-    wbbox = [-92.964215,42.457983,-86.708830,47.083097]
+    bbox = [-92.964215,42.457983,-86.708830,47.083097]
 
     C_TOKEN = credentials.C_TOKEN
     C_SECRET = credentials.C_SECRET
@@ -24,7 +24,7 @@ def Main():
     WriteHeaders()
 
     stream = tweepy.Stream(auth, listener=Listener())
-    stream.filter(locations=wbbox)
+    stream.filter(locations=bbox)
     return
 
 # ======================================================================================================================
