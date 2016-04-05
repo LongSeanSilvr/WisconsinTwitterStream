@@ -26,35 +26,14 @@ class Listener(tweepy.StreamListener):
         self.tweet_limit = config.tweet_limit
 
     def on_data(self, data):
-
-        # Use Json to decode data stream
-        decoded = json.loads(data)
-
-        # Open nodes for writing human readable ouput
-        try:
-            user = decoded['user']['screen_name'].encode('ascii', 'ignore')
-        except KeyError:
-            user = "anonymous"
-        try:
-            content_readable = self.text_wrapper.fill(decoded['text'].encode('ascii', 'ignore'))
-        except KeyError:
-            content_readable = "NULL_CONTENT"
-        try:
-            content = decoded['text'].encode('ascii', 'ignore')
-        except KeyError:
-            content = "NULL_CONTENT"
-
-        #Write to json and human readable files
-        with open(os.path.join(self.script_dir,"output/Wisconsin_tweet_stream.json"), 'a') as f:
-            f.write(data)
-        with open(os.path.join(self.script_dir,"output/Wisconsin_tweet_stream.txt"), 'a') as f:
-            f.write("user: {}\nncontent:\n{}\n\n".format(user, content_readable))
-        self.num_tweets += 1
+        (user, content_readable) = pull_interesting_bits(data)
         print "{}.\nUSER: {}\nCONTENT:\n{}\n".format(str(self.num_tweets),user, content_readable)
-
+        write_output(data, user, content_readable)
+        
         #run until n tweets collected
+        self.num_tweets += 1
         if self.num_tweets < self.tweet_limit:
-            return True
+            return
         else:
             print "\n{} tweets collected!\nExiting...\n".format(self.tweet_limit)
             clean_up()
@@ -66,11 +45,29 @@ class Listener(tweepy.StreamListener):
 
     def on_error(self, status_code):
         print 'An error has occured! Status code = {}'.format(status_code)
-        return True  # keep stream alive
+        return
 
     def on_timeout(self):
         print 'Timeout: Snoozing Zzzzzz'
         return
+
+    def pull_interesting_bits(data):
+        decoded = json.loads(data)
+        try:
+            user = decoded['user']['screen_name'].encode('ascii', 'ignore')
+        except KeyError:
+            user = "anonymous"
+        try:
+            content_readable = self.text_wrapper.fill(decoded['text'].encode('ascii', 'ignore'))
+        except KeyError:
+            content_readable = "NULL_CONTENT"
+        return (user, content_readable)
+
+    def write_output(data, user, content):
+        with open(os.path.join(self.script_dir,"output/Wisconsin_tweet_stream.json"), 'a') as f:
+            f.write(data)
+        with open(os.path.join(self.script_dir,"output/Wisconsin_tweet_stream.txt"), 'a') as f:
+            f.write("user: {}\nncontent:\n{}\n\n".format(user, content))
 
 # ======================================================================================================================
 # Program Functions
@@ -78,9 +75,19 @@ class Listener(tweepy.StreamListener):
 def WriteHeaders():
     now = str(datetime.datetime.now())
     script_dir = os.path.dirname(__file__)
+
+    #make output/directory if one does not exist
+    if not os.path.exists(os.path.join(script_dir,"output/")):
+    try:
+        os.makedirs(os.path.join(script_dir,"output/"))
+    except OSError as exc: # Guard against race condition
+        if exc.errno != errno.EEXIST:
+            raise
+    # write json to json file
     if not os.path.isfile(os.path.join(script_dir,"output/Wisconsin_tweet_stream.json")):
         with open(os.path.join(script_dir,"output/Wisconsin_tweet_stream.json"), 'wb') as f:
             f.write("TWITTER COLLECTION\nCollection started at: {}\n\n".format(now))
+    # write txt to a human-readable file for spot-checking
     if not os.path.isfile(os.path.join(script_dir,"output/Wisconsin_tweet_stream.txt")):
         with open(os.path.join(script_dir,"output/Wisconsin_tweet_stream.txt"), 'wb') as f:
             f.write("TWITTER COLLECTION\nCollection started at: {}\n\n".format(now))
