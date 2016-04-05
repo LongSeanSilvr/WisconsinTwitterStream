@@ -1,2 +1,3 @@
-# WisconsinTwitterStream
-Python script developed for collecting a corpus of tweets originating in Wisconsin during the 24 hours leading up to the 2016 Wisconsin presidential primaries.
+# PyTLoL
+## Python Twitter Location Listener
+Listens in on and records a live stream of tweets originating from within a specified geographic bounding box
