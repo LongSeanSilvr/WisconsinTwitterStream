@@ -2,29 +2,17 @@
 Python Twitter Location Listener
 """
 
-import os, sys, json, datetime
+import sys, os, json, datetime
 import tweepy, textwrap
-import credentials
+import config
 
 # ======================================================================================================================
 # Main Function
 # ======================================================================================================================
 def Main():
-
-    bbox = [-92.964215,42.457983,-86.708830,47.083097]
-
-    C_TOKEN = credentials.C_TOKEN
-    C_SECRET = credentials.C_SECRET
-    ACC_TOKEN = credentials.ACC_TOKEN
-    ACC_SECRET = credentials.ACC_SECRET
-
-    auth = tweepy.OAuthHandler(C_TOKEN, C_SECRET)
-    auth.set_access_token(ACC_TOKEN, ACC_SECRET)
-
     WriteHeaders()
-
-    stream = tweepy.Stream(auth, listener=Listener())
-    stream.filter(locations=bbox)
+    auth = authenticate()
+    start_stream(auth)
     return
 
 # ======================================================================================================================
@@ -55,7 +43,7 @@ class Listener(tweepy.StreamListener):
         except KeyError:
             content = "NULL_CONTENT"
 
-        #Write to file
+        #Write to json and human readable files
         with open(os.path.join(self.script_dir,"output/Wisconsin_tweet_stream.json"), 'a') as f:
             f.write(data)
         with open(os.path.join(self.script_dir,"output/Wisconsin_tweet_stream.txt"), 'a') as f:
@@ -64,10 +52,10 @@ class Listener(tweepy.StreamListener):
         print "{}.\nUSER: {}\nCONTENT:\n{}\n".format(str(self.num_tweets),user, content_readable)
 
         #run until n tweets collected
-        if self.num_tweets < 500000:
+        if self.num_tweets < 50000:
             return True
         else:
-            print "\n500,000 tweets collected!\nExiting...\n"
+            print "\n50,000 tweets collected!\nExiting...\n"
             clean_up()
             sys.exit()
 
@@ -84,7 +72,7 @@ class Listener(tweepy.StreamListener):
         return
 
 # ======================================================================================================================
-# Other Functions
+# Program Functions
 # ======================================================================================================================
 def WriteHeaders():
     now = str(datetime.datetime.now())
@@ -97,6 +85,21 @@ def WriteHeaders():
             f.write("TWITTER COLLECTION\nCollection started at: {}\n\n".format(now))
     return
 
+def authenticate():
+    C_TOKEN = config.C_TOKEN
+    C_SECRET = config.C_SECRET
+    ACC_TOKEN = config.ACC_TOKEN
+    ACC_SECRET = config.ACC_SECRET
+    
+    auth = tweepy.OAuthHandler(C_TOKEN, C_SECRET)
+    auth.set_access_token(ACC_TOKEN, ACC_SECRET)
+    
+    return auth
+
+def start_stream(auth):
+    stream = tweepy.Stream(auth, listener=Listener())
+    stream.filter(locations=config.bbox)
+
 def clean_up():
     now = str(datetime.datetime.now())
     script_dir = os.path.dirname(__file__)
@@ -105,6 +108,8 @@ def clean_up():
     with open(os.path.join(script_dir,"output/Wisconsin_tweet_stream.txt"), 'a') as f:
         f.write("\n\nTWITTER COLLECTION ENDED: {}".format(now))
     return
+
+
 # ======================================================================================================================
 # Run
 # ======================================================================================================================
