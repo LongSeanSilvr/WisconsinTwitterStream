@@ -87,13 +87,13 @@ def WriteHeaders():
     return
 
 def authenticate():
-    C_TOKEN = config.C_TOKEN
-    C_SECRET = config.C_SECRET
-    ACC_TOKEN = config.ACC_TOKEN
-    ACC_SECRET = config.ACC_SECRET
+    c_tok = config.consumer_token
+    c_sec = config.consumer_secret
+    acc_tok = config.access_token
+    acc_sec = config.access_secret
     
-    auth = tweepy.OAuthHandler(C_TOKEN, C_SECRET)
-    auth.set_access_token(ACC_TOKEN, ACC_SECRET)
+    auth = tweepy.OAuthHandler(c_tok, c_sec)
+    auth.set_access_token(acc_tok, acc_sec)
     
     return auth
 
