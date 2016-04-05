@@ -69,12 +69,12 @@ def write_headers():
         os.makedirs(os.path.join(script_dir, "output/"))
 
     # write json to json file
-    if not os.path.isfile(os.path.join(script_dir, "output/Wisconsin_tweet_stream3.json")):
-        with open(os.path.join(script_dir, "output/Wisconsin_tweet_stream3.json"), 'wb') as f:
+    if not os.path.isfile(os.path.join(script_dir, "output/pyglit_tweet_stream.json")):
+        with open(os.path.join(script_dir, "output/pyglit_tweet_stream.json"), 'wb') as f:
             f.write("TWITTER COLLECTION\nCollection started at: {}\n\n".format(now))
     # write txt to a human-readable file for spot-checking
-    if not os.path.isfile(os.path.join(script_dir, "output/Wisconsin_tweet_stream3.txt")):
-        with open(os.path.join(script_dir, "output/Wisconsin_tweet_stream3.txt"), 'wb') as f:
+    if not os.path.isfile(os.path.join(script_dir, "output/pyglit_tweet_stream.txt")):
+        with open(os.path.join(script_dir, "output/pyglit_tweet_stream.txt"), 'wb') as f:
             f.write("TWITTER COLLECTION\nCollection started at: {}\n\n".format(now))
     return
 
@@ -94,9 +94,9 @@ def pull_interesting_bits(data):
 
 
 def write_output(data, user, content):
-    with open(os.path.join(script_dir, "output/Wisconsin_tweet_stream3.json"), 'a') as f:
+    with open(os.path.join(script_dir, "output/pyglit_tweet_stream.json"), 'a') as f:
         f.write(data)
-    with open(os.path.join(script_dir, "output/Wisconsin_tweet_stream3.txt"), 'a') as f:
+    with open(os.path.join(script_dir, "output/pyglit_tweet_stream.txt"), 'a') as f:
         f.write("user: {}\nncontent:\n{}\n\n".format(user, content))
 
 
@@ -119,9 +119,9 @@ def start_stream(auth):
 
 def clean_up():
     now = str(datetime.datetime.now())
-    with open(os.path.join(script_dir, "output/Wisconsin_tweet_stream3.json"), 'a') as f:
+    with open(os.path.join(script_dir, "output/pyglit_tweet_stream.json"), 'a') as f:
         f.write("\n\nTWITTER COLLECTION ENDED: {}".format(now))
-    with open(os.path.join(script_dir, "output/Wisconsin_tweet_stream3.txt"), 'a') as f:
+    with open(os.path.join(script_dir, "output/pyglit_tweet_stream.txt"), 'a') as f:
         f.write("\n\nTWITTER COLLECTION ENDED: {}".format(now))
     return
 
