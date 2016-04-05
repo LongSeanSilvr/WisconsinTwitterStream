@@ -23,6 +23,7 @@ class Listener(tweepy.StreamListener):
         self.num_tweets = 0
         self.script_dir = os.path.dirname(__file__)
         self.text_wrapper = textwrap.TextWrapper(width=70, initial_indent="    ", subsequent_indent="    ")
+        self.tweet_limit = config.tweet_limit
 
     def on_data(self, data):
 
@@ -52,10 +53,10 @@ class Listener(tweepy.StreamListener):
         print "{}.\nUSER: {}\nCONTENT:\n{}\n".format(str(self.num_tweets),user, content_readable)
 
         #run until n tweets collected
-        if self.num_tweets < 50000:
+        if self.num_tweets < self.tweet_limit:
             return True
         else:
-            print "\n50,000 tweets collected!\nExiting...\n"
+            print "\n{} tweets collected!\nExiting...\n".format(self.tweet_limit)
             clean_up()
             sys.exit()
 
