@@ -71,11 +71,11 @@ def write_headers():
     # write json to json file
     if not os.path.isfile(os.path.join(script_dir, "output/pyglit_tweet_stream.json")):
         with open(os.path.join(script_dir, "output/pyglit_tweet_stream.json"), 'wb') as f:
-            f.write("TWITTER COLLECTION\nCollection started at: {}\n\n".format(now))
+            f.write("COLLECTION STARTED AT: {}\n\n".format(now))
     # write txt to a human-readable file for spot-checking
     if not os.path.isfile(os.path.join(script_dir, "output/pyglit_tweet_stream.txt")):
         with open(os.path.join(script_dir, "output/pyglit_tweet_stream.txt"), 'wb') as f:
-            f.write("TWITTER COLLECTION\nCollection started at: {}\n\n".format(now))
+            f.write("COLLECTION STARTED AT: {}\n\n".format(now))
     return
 
 
