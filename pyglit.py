@@ -9,6 +9,7 @@ import datetime
 import tweepy
 import textwrap
 import config
+import state_geometry as sg
 
 
 # ======================================================================================================================
@@ -114,7 +115,13 @@ def authenticate():
 
 def start_stream(auth):
     stream = tweepy.Stream(auth, listener=Listener())
-    stream.filter(locations=config.bbox)
+    if config.state:
+        bbox = sg.retrieve_bbox(config.state)
+    elif config.bbox:
+        bbox = config.bbox
+    else:
+        sys.exit("ERROR: You must specify either the state of interest or a bounding box in config.py!")
+    stream.filter(locations=bbox)
 
 
 def clean_up():
