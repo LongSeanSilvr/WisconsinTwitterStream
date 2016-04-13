@@ -7,6 +7,7 @@ import os
 import json
 import datetime
 import tweepy
+import shapely.geometry as shp
 import textwrap
 import config
 import state_geometry as sg
@@ -31,9 +32,15 @@ class Listener(tweepy.StreamListener):
         self.tweet_limit = config.tweet_limit
 
     def on_data(self, data):
-        (user, content_readable) = pull_interesting_bits(data)
-        print "{}.\nUSER: {}\nCONTENT:\n{}\n".format(str(self.num_tweets), user, content_readable)
-        write_output(data, user, content_readable)
+        if config.state:
+            if state_filter(data):
+                (user, content_readable) = pull_interesting_bits(data)
+                print "{}.\nUSER: {}\nCONTENT:\n{}\n".format(str(self.num_tweets), user, content_readable)
+                write_output(data, user, content_readable)
+        else:
+            (user, content_readable) = pull_interesting_bits(data)
+            print "{}.\nUSER: {}\nCONTENT:\n{}\n".format(str(self.num_tweets), user, content_readable)
+            write_output(data, user, content_readable)
         # run until n tweets collected
         self.num_tweets += 1
         if self.num_tweets < self.tweet_limit:
@@ -124,6 +131,29 @@ def start_stream(auth):
     stream.filter(locations=bbox)
 
 
+def state_filter(json_obj):
+    tweet = json.loads(json_obj)
+    try:
+        if tweet["coordinates"] is not None:
+            point = shp.Point(tweet["coordinates"]["coordinates"][1], tweet["coordinates"]["coordinates"][0])
+            if point.within(state_poly):
+                return True
+            else:
+                return False
+        elif tweet["place"]["bounding_box"] is not None:
+            corners = tweet["place"]["bounding_box"]["coordinates"][0]
+            points = sg.coords2points(corners)
+            bbox = shp.MultiPoint(points).convex_hull
+            if bbox.within(state_poly):
+                return True
+            else:
+                return False
+        else:
+            return False
+    except KeyError:
+        return False
+
+
 def clean_up():
     now = str(datetime.datetime.now())
     with open(os.path.join(script_dir, "output/pyglit_tweet_stream.json"), 'a') as f:
@@ -139,6 +169,8 @@ def clean_up():
 
 if __name__ == "__main__":
     try:
+        if config.state:
+            state_poly = sg.retrieve_polygon(config.state)
         main()
     except KeyboardInterrupt:
         print "Finishing up..."
