@@ -6,7 +6,6 @@ USAGE: (python) polygon.py "STATE"
 
 import sys
 import re
-import requests
 import shapely.geometry as shp
 
 
@@ -25,7 +24,8 @@ def retrieve_bbox(state):
 
 
 def state_coords(state):
-    statelist = requests.get("http://mbostock.github.io/protovis/ex/us_lowres.js").content
+    with open("state_coordinates.js","rb") as f:
+        statelist = f.read()
     coords = re.search(r'{}.*?borders:(.*?\]\]\])'.format(state), statelist, re.IGNORECASE).group(1)
     coords = re.sub(r'^\[\[(.*)\]\]$', r'\1', coords)
     coords = re.sub(r'\],\[', r']|[', coords)

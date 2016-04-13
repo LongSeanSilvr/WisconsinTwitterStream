@@ -34,13 +34,17 @@ class Listener(tweepy.StreamListener):
     def on_data(self, data):
         if config.state:
             if state_filter(data):
-                (user, content_readable) = pull_interesting_bits(data)
-                print "{}.\nUSER: {}\nCONTENT:\n{}\n".format(str(self.num_tweets), user, content_readable)
-                write_output(data, user, content_readable)
+                (user, content_readable, location) = pull_interesting_bits(data)
+                print "{}.\nUSER: {}\nLOCATION: {}\nCONTENT:\n{}\n".format(str(self.num_tweets), user, location,
+                                                                           content_readable)
+                write_output(data, user, location, content_readable)
+            else:
+                pass
         else:
-            (user, content_readable) = pull_interesting_bits(data)
-            print "{}.\nUSER: {}\nCONTENT:\n{}\n".format(str(self.num_tweets), user, content_readable)
-            write_output(data, user, content_readable)
+            (user, content_readable, location) = pull_interesting_bits(data)
+            print "{}.\nUSER: {}\nLOCATION: {}\nCONTENT:\n{}\n".format(str(self.num_tweets), user, location,
+                                                                       content_readable)
+            write_output(data, user, location, content_readable)
         # run until n tweets collected
         self.num_tweets += 1
         if self.num_tweets < self.tweet_limit:
@@ -98,14 +102,18 @@ def pull_interesting_bits(data):
         content_readable = text_wrapper.fill(decoded['text'].encode('ascii', 'ignore'))
     except KeyError:
         content_readable = "NULL_CONTENT"
-    return user, content_readable
+    try:
+        location = decoded['place']['full_name'].encode('ascii', 'ignore')
+    except KeyError:
+        location = "NULL_CONTENT"
+    return user, content_readable, location
 
 
-def write_output(data, user, content):
+def write_output(data, user, location, content):
     with open(os.path.join(script_dir, "output/pyglit_tweet_stream.json"), 'a') as f:
         f.write(data)
     with open(os.path.join(script_dir, "output/pyglit_tweet_stream.txt"), 'a') as f:
-        f.write("user: {}\nncontent:\n{}\n\n".format(user, content))
+        f.write("user: {}\nlocation: {}\ncontent:\n{}\n\n".format(user, location, content))
 
 
 def authenticate():
