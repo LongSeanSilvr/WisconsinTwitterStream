@@ -6,6 +6,7 @@ import sys
 import os
 import json
 import datetime
+import re
 import tweepy
 import shapely.geometry as shp
 import textwrap
@@ -38,6 +39,7 @@ class Listener(tweepy.StreamListener):
                 print "{}.\nUSER: {}\nLOCATION: {}\nCONTENT:\n{}\n".format(str(self.num_tweets), user, location,
                                                                            content_readable)
                 write_output(data, user, location, content_readable)
+                self.num_tweets += 1
             else:
                 pass
         else:
@@ -45,8 +47,8 @@ class Listener(tweepy.StreamListener):
             print "{}.\nUSER: {}\nLOCATION: {}\nCONTENT:\n{}\n".format(str(self.num_tweets), user, location,
                                                                        content_readable)
             write_output(data, user, location, content_readable)
+            self.num_tweets += 1
         # run until n tweets collected
-        self.num_tweets += 1
         if self.num_tweets < self.tweet_limit:
             return
         else:
@@ -142,24 +144,64 @@ def start_stream(auth):
 def state_filter(json_obj):
     tweet = json.loads(json_obj)
     try:
-        if tweet["coordinates"] is not None:
-            point = shp.Point(tweet["coordinates"]["coordinates"][1], tweet["coordinates"]["coordinates"][0])
-            if point.within(state_poly):
-                return True
-            else:
-                return False
-        elif tweet["place"]["bounding_box"] is not None:
-            corners = tweet["place"]["bounding_box"]["coordinates"][0]
-            points = sg.coords2points(corners)
-            bbox = shp.MultiPoint(points).convex_hull
-            if bbox.within(state_poly):
-                return True
-            else:
+        if config.state:
+            try:
+                if tweet['place']['full_name'] is not None:
+                    name = tweet['place']['full_name']
+                    if re.match(config.state, name, re.IGNORECASE) or \
+                        re.match(r'.*, {}$'.format(state_code), name, re.IGNORECASE) or \
+                        re.match(r'.*, {}$'.format(state_code), tweet['user']['location'], re.IGNORECASE):
+                        return True
+                    else:
+                        return False
+                elif tweet["coordinates"] is not None:
+                    point = shp.Point(tweet["coordinates"]["coordinates"][1], tweet["coordinates"]["coordinates"][0])
+                    if point.within(state_poly):
+                        return True
+                    else:
+                        return False
+                elif tweet["place"]["bounding_box"] is not None:
+                    corners = tweet["place"]["bounding_box"]["coordinates"][0]
+                    points = sg.coords2points(corners)
+                    bbox = shp.MultiPoint(points).convex_hull
+                    if bbox.within(state_poly):
+                        return True
+                    else:
+                        return False
+                else:
+                    return False
+            except TypeError:   # Type error is thrown when user location is None.
+                                # User location is only checked if state-code or state name not found in full_name.
                 return False
         else:
-            return False
+            if tweet["coordinates"] is not None:
+                point = shp.Point(tweet["coordinates"]["coordinates"][1], tweet["coordinates"]["coordinates"][0])
+                if point.within(state_poly):
+                    return True
+                else:
+                    return False
+            elif tweet["place"]["bounding_box"] is not None:
+                corners = tweet["place"]["bounding_box"]["coordinates"][0]
+                points = sg.coords2points(corners)
+                bbox = shp.MultiPoint(points).convex_hull
+                if bbox.within(state_poly):
+                    return True
+                else:
+                    return False
+            else:
+                return False
     except KeyError:
         return False
+
+def state_code(state):
+    with open("state_codes.txt","rb") as f:
+        text = f.read()
+    try:
+        code = re.search(r'{} = "(.*?)"'.format(state),text, re.IGNORECASE).group(1)
+    except AttributeError:
+        sys.exit("ERROR: wasn't able to look up the code for your state in state_codes.txt. "
+                 "Are you sure you spelled it right in config.py??")
+    return code
 
 
 def clean_up():
@@ -179,6 +221,7 @@ if __name__ == "__main__":
     try:
         if config.state:
             state_poly = sg.retrieve_polygon(config.state)
+            state_code = state_code(config.state)
         main()
     except KeyboardInterrupt:
         print "Finishing up..."
