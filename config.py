@@ -1,8 +1,8 @@
 # Replace with valid credentials
-consumer_token = '******'
-consumer_secret = '******'
-access_token = '******'
-access_secret = '******'
+consumer_token = '429rCUyfhGBj9PlYJ9KajEbYW'
+consumer_secret = 'zNMQcy3fskqHXTV668dKSylQkFcNGrAbFKCT9JyGX0z9xC4Gmm'
+access_token = '4064712556-70sNTtKMVldeSKs3lvwUF87H6H3uUsD9XDt1sHb'
+access_secret = 'PZSeTun2R1MLCf3KNuaozIDusnH7TZwMdFHSNbehG6xVi'
 
 # LOCATION:
 #   Specify a state name (e.g. state = "New York"), and pyglit will filter using an bbox automatically generated for
