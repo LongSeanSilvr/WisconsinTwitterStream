@@ -1,4 +1,5 @@
 /config.py
 /*.pyc
+/keys.txt
 /.idea/*
 /output/*
