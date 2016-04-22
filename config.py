@@ -1,4 +1,4 @@
-# Replace with valid credentials
+# CREDENTIALS
 consumer_token = '************'
 consumer_secret = '************'
 access_token = '************'
@@ -14,5 +14,5 @@ state = "New York"
 #   coordinates for the bbox variable below and set the state variable above to be None.
 bbox = [-92.964215,42.457983,-86.708830,47.083097] # (min_long, min_lat, max_long, max_lat)
 
-# max number of tweets to collect
+# TWEET MAX:
 tweet_limit = 100000
