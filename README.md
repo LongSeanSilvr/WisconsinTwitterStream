@@ -6,8 +6,8 @@ Listens in on and records a live stream of tweets originating from within a spec
 
 ## Dependencies
 In order to use pyglit you will have to install the following dependencies:  
-* tweepy: 'pip install tweepy`  
-* shapely `pip install shapely`
+* tweepy: `pip install tweepy`  
+* shapely: `pip install shapely`
 
 ## Setting up config.py
 Before running pyglit, you will need to set your preferences in config.py. There are three main parameters you need to set:  
