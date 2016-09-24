@@ -141,6 +141,7 @@ def start_stream(auth):
 
 
 def state_filter(json_obj):
+    # ToDo: Clean up ifelse logic here
     tweet = json.loads(json_obj)
     try:
         if config.state:
