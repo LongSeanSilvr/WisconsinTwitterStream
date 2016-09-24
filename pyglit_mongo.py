@@ -12,15 +12,18 @@ import shapely.geometry as shp
 import textwrap
 import config
 import state_geometry as sg
+from pymongo import MongoClient
 
 
 # ======================================================================================================================
 # Main Function
 # ======================================================================================================================
 def main():
-    write_headers()
+    client = MongoClient()
+    db = client['politisent_tweets']
+    collection = db[state_code]
     auth = authenticate()
-    start_stream(auth)
+    start_stream(auth, collection)
     return
 
 
@@ -28,26 +31,24 @@ def main():
 # Listener Class
 # ======================================================================================================================
 class Listener(tweepy.StreamListener):
-    def __init__(self, api=None):
+    def __init__(self, collection, api=None):
+        self.collection = collection
         self.num_tweets = 0
         self.tweet_limit = config.tweet_limit
 
     def on_data(self, data):
+        data_string = json.loads(data)
         if config.state:
             if state_filter(data):
-                (user, content_readable, location) = pull_interesting_bits(data)
-                print "{}.\nUSER: {}\nLOCATION: {}\nCONTENT:\n{}\n".format(str(self.num_tweets), user, location,
-                                                                           content_readable)
-                write_output(data, user, location, content_readable)
+                self.collection.insert_one(data_string)
                 self.num_tweets += 1
+                print self.num_tweets
             else:
                 pass
         else:
-            (user, content_readable, location) = pull_interesting_bits(data)
-            print "{}.\nUSER: {}\nLOCATION: {}\nCONTENT:\n{}\n".format(str(self.num_tweets), user, location,
-                                                                       content_readable)
-            write_output(data, user, location, content_readable)
+            self.collection.insert_one(data_string)
             self.num_tweets += 1
+            print self.num_tweets
 
         # run until n tweets collected
         if self.tweet_limit and self.num_tweets > self.tweet_limit:
@@ -71,51 +72,6 @@ class Listener(tweepy.StreamListener):
 # ======================================================================================================================
 # Auxilliary Functions
 # ======================================================================================================================
-script_dir = os.path.dirname(__file__)
-
-
-def write_headers():
-    now = str(datetime.datetime.now())
-
-    # make output/directory if one does not exist
-    if not os.path.exists(os.path.join(script_dir, "output/")):
-        os.makedirs(os.path.join(script_dir, "output/"))
-
-    # write json to json file
-    if not os.path.isfile(os.path.join(script_dir, "output/pyglit_tweet_stream.json")):
-        with open(os.path.join(script_dir, "output/pyglit_tweet_stream.json"), 'wb') as f:
-            f.write("COLLECTION STARTED AT: {}\n\n".format(now))
-    # write txt to a human-readable file for spot-checking
-    if not os.path.isfile(os.path.join(script_dir, "output/pyglit_tweet_stream.txt")):
-        with open(os.path.join(script_dir, "output/pyglit_tweet_stream.txt"), 'wb') as f:
-            f.write("COLLECTION STARTED AT: {}\n\n".format(now))
-    return
-
-
-def pull_interesting_bits(data):
-    decoded = json.loads(data)
-    text_wrapper = textwrap.TextWrapper(width=70, initial_indent="    ", subsequent_indent="    ")
-    try:
-        user = decoded['user']['screen_name'].encode('ascii', 'ignore')
-    except KeyError:
-        user = "anonymous"
-    try:
-        content_readable = text_wrapper.fill(decoded['text'].encode('ascii', 'ignore'))
-    except KeyError:
-        content_readable = "NULL_CONTENT"
-    try:
-        location = decoded['place']['full_name'].encode('ascii', 'ignore')
-    except KeyError:
-        location = "NULL_CONTENT"
-    return user, content_readable, location
-
-
-def write_output(data, user, location, content):
-    with open(os.path.join(script_dir, "output/pyglit_tweet_stream.json"), 'a') as f:
-        f.write(data)
-    with open(os.path.join(script_dir, "output/pyglit_tweet_stream.txt"), 'a') as f:
-        f.write("user: {}\nlocation: {}\ncontent:\n{}\n\n".format(user, location, content))
-
 
 def authenticate():
     c_tok = config.consumer_token
@@ -129,8 +85,8 @@ def authenticate():
     return auth
 
 
-def start_stream(auth):
-    stream = tweepy.Stream(auth, listener=Listener())
+def start_stream(auth, collection="general"):
+    stream = tweepy.Stream(auth, listener=Listener(collection))
     if config.state:
         bbox = sg.retrieve_bbox(config.state)
     elif config.bbox:
@@ -145,8 +101,8 @@ def state_filter(json_obj):
     try:
         if config.state:
             try:
-                if tweet['place']['full_name'] is not None:
-                    name = tweet['place']['full_name']
+                name = tweet['place']['full_name']
+                if name is not None:
                     if re.match(config.state, name, re.IGNORECASE) or \
                         re.match(r'.*, {}$'.format(state_code), name, re.IGNORECASE) or \
                         re.match(r'.*, {}$'.format(state_code), tweet['user']['location'], re.IGNORECASE):
@@ -216,6 +172,7 @@ def clean_up():
 # ======================================================================================================================
 # Run
 # ======================================================================================================================
+script_dir = os.path.dirname(__file__)
 
 if __name__ == "__main__":
     try:
