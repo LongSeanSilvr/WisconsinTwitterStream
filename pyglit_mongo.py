@@ -4,7 +4,7 @@ Python Geolocation Listener for Twitter
 
 import sys
 import os
-import json
+import ujson as json
 import datetime
 import re
 import tweepy
