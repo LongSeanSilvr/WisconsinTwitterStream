@@ -9,7 +9,6 @@ import datetime
 import re
 import tweepy
 import shapely.geometry as shp
-import textwrap
 import config
 import state_geometry as sg
 from pymongo import MongoClient
