@@ -8,6 +8,7 @@ import ujson as json
 import datetime
 import re
 import tweepy
+import textwrap
 import shapely.geometry as shp
 import config
 import state_geometry as sg
@@ -41,13 +42,17 @@ class Listener(tweepy.StreamListener):
             if state_filter(data):
                 self.collection.insert_one(data_string)
                 self.num_tweets += 1
-                print self.num_tweets
+                (user, content_readable, location) = pull_interesting_bits(data)
+                print "{}.\nUSER: {}\nLOCATION: {}\nCONTENT:\n{}\n".format(str(self.num_tweets), user, location,
+                                                                           content_readable)
             else:
                 pass
         else:
             self.collection.insert_one(data_string)
             self.num_tweets += 1
-            print self.num_tweets
+            (user, content_readable, location) = pull_interesting_bits(data)
+            print "{}.\nUSER: {}\nLOCATION: {}\nCONTENT:\n{}\n".format(str(self.num_tweets), user, location,
+                                                                       content_readable)
 
         # run until n tweets collected
         if self.tweet_limit and self.num_tweets > self.tweet_limit:
@@ -157,6 +162,24 @@ def state_code(state):
         sys.exit("ERROR: wasn't able to look up the code for your state in state_codes.txt. "
                  "Are you sure you spelled it right in config.py??")
     return code
+
+
+def pull_interesting_bits(data):
+    decoded = json.loads(data)
+    text_wrapper = textwrap.TextWrapper(width=70, initial_indent="    ", subsequent_indent="    ")
+    try:
+        user = decoded['user']['screen_name'].encode('ascii', 'ignore')
+    except KeyError:
+        user = "anonymous"
+    try:
+        content_readable = text_wrapper.fill(decoded['text'].encode('ascii', 'ignore'))
+    except KeyError:
+        content_readable = "NULL_CONTENT"
+    try:
+        location = decoded['place']['full_name'].encode('ascii', 'ignore')
+    except KeyError:
+        location = "NULL_CONTENT"
+    return user, content_readable, location
 
 
 def clean_up():
