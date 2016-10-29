@@ -6,6 +6,7 @@ import sys
 import os
 import ujson as json
 import datetime
+from time import sleep
 import re
 import tweepy
 import textwrap
@@ -76,7 +77,6 @@ class Listener(tweepy.StreamListener):
 # ======================================================================================================================
 # Auxilliary Functions
 # ======================================================================================================================
-
 def authenticate():
     c_tok = config.consumer_token
     c_sec = config.consumer_secret
@@ -89,21 +89,63 @@ def authenticate():
     return auth
 
 
-def start_stream(auth, collection="general"):
+def start_stream(auth, collection="general", error_count=0):
+    # Initiate streamer
     stream = tweepy.Stream(auth, listener=Listener(collection))
+
+    # Gather config info
     if config.state:
         bbox = sg.retrieve_bbox(config.state)
     elif config.bbox:
         bbox = config.bbox
     else:
         sys.exit("ERROR: You must specify either the state of interest or a bounding box in config.py!")
-    stream.filter(locations=bbox)
+
+    # Start stream; sleep incrementally on errors/rate-limits
+    safe_stream(stream, bbox)
+
+def safe_stream(stream, bbox, error_count=0):
+    try:
+        stream.filter(locations=bbox)
+
+    except Exception, e:
+        sleep_counts = {
+            0: 60,
+            1: 600,
+            2: 3600,
+            3: 3600 * 5,
+        }
+
+        if error_count in sleep_counts.keys():
+            sleep_time = sleep_counts[error_count]
+        else:
+            sleep_time = sleep_counts[max(sleep_counts.keys())]
+
+        print "\n\nERROR: {}\nError Count: {}\n".format(str(e), error_count)
+        for i in xrange(sleep_time, -1, -1):
+            sys.stdout.write("\rTrying again in: {}".format(time_format(i)))
+            sys.stdout.flush()
+            sleep(1)
+
+        error_count +=1
+        safe_stream(stream, bbox, error_count)
+
+
+def time_format(seconds):
+    if seconds:
+        hrs = seconds / 3600
+        mins = (seconds - (hrs*3600)) / 60
+        secs = seconds - hrs*3600 - mins*60
+    else:
+        hrs, mins, secs = 0, 0, 0
+    return "{} hrs, {} minutes, {} seconds".format(hrs, mins, secs)
 
 
 def state_filter(json_obj):
     tweet = json.loads(json_obj)
     try:
         if config.state:
+            state_poly = sg.retrieve_polygon(config.state)
             try:
                 name = tweet['place']['full_name']
                 if name is not None:
